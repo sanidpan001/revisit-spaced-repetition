@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revisit — Free Spaced Repetition Study Planner &amp; Exam Revision Timetable Maker</title>
+<meta name="description" content="Revisit is a free spaced repetition study planner that builds your exam revision timetable around your real availability. SM-2 scheduling, forgetting-curve charts, confidence-weighted reviews and a printable study calendar. No signup, unlimited free usage.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#2B3A42; --chalk:#F5F1E6; --yellow:#FFD166;
+  }
+  html{ scroll-behavior:smooth; }
+  body{
+    background-color:var(--board);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,209,102,.06), transparent),
+      radial-gradient(ellipse 70% 45% at 85% 110%, rgba(245,241,230,.05), transparent);
+    color:var(--chalk);
+    font-family:'Inter',system-ui,sans-serif;
+  }
+  .chalk-font{ font-family:'Caveat',cursive; }
+  .chalk-board{
+    background:
+      linear-gradient(160deg, rgba(255,255,255,.03), rgba(0,0,0,.12)),
+      #24343d;
+    border:3px solid rgba(245,241,230,.85);
+    border-radius:14px;
+    box-shadow:0 18px 50px rgba(0,0,0,.35), inset 0 0 60px rgba(0,0,0,.25);
+  }
+  .chalk-inner{
+    border:1.5px dashed rgba(245,241,230,.35);
+    border-radius:10px;
+  }
+  .chalk-input{
+    background:rgba(0,0,0,.28); color:var(--chalk);
+    border:2px solid rgba(245,241,230,.45); border-radius:10px;
+    padding:.6rem .85rem; width:100%;
+  }
+  .chalk-input:focus{ outline:none; border-color:var(--yellow); box-shadow:0 0 0 3px rgba(255,209,102,.25); }
+  .chalk-input::placeholder{ color:rgba(245,241,230,.4); }
+  input[type="date"].chalk-input{ color-scheme:dark; }
+  .chalk-btn{
+    background:var(--yellow); color:#2B3A42; font-weight:700;
+    border-radius:12px; padding:.8rem 1.6rem;
+    box-shadow:3px 3px 0 rgba(245,241,230,.85);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .chalk-btn:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 rgba(245,241,230,.85); }
+  .chalk-btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(245,241,230,.85); }
+  .chalk-ghost{
+    border:2px dashed rgba(245,241,230,.5); color:var(--chalk);
+    border-radius:10px; padding:.45rem .9rem; font-weight:600;
+  }
+  .chalk-ghost:hover{ border-color:var(--yellow); color:var(--yellow); }
+  .wd-toggle{
+    width:44px; height:44px; border-radius:50%;
+    border:2px dashed rgba(245,241,230,.45);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.85rem; cursor:pointer; user-select:none;
+    transition:all .15s ease; color:rgba(245,241,230,.75);
+  }
+  .wd-toggle.on{
+    background:var(--yellow); color:#2B3A42; border:2px solid var(--yellow);
+    box-shadow:0 0 14px rgba(255,209,102,.5);
+  }
+  .conf-dot{
+    width:34px; height:34px; border-radius:50%;
+    border:2px dashed rgba(245,241,230,.45); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.8rem; font-weight:700; color:rgba(245,241,230,.6);
+  }
+  .conf-dot.on{ background:var(--yellow); color:#2B3A42; border-style:solid; border-color:var(--yellow); }
+  .topic-chip{
+    border:2px solid rgba(245,241,230,.4); border-radius:999px;
+    padding:.25rem .8rem; font-size:.85rem; display:inline-flex; gap:.5rem; align-items:center;
+  }
+  .topic-chip button{ color:#ff9d9d; font-weight:700; }
+  .sess-learn{ background:var(--yellow); color:#2B3A42; }
+  .sess-review{ border:2px dashed rgba(255,209,102,.8); color:var(--yellow); }
+  .cal-day{
+    aspect-ratio:1; border:1px dashed rgba(245,241,230,.22);
+    border-radius:8px; padding:2px 4px; font-size:.72rem; position:relative;
+  }
+  .cal-day .dots{ position:absolute; bottom:3px; left:0; right:0; display:flex; justify-content:center; gap:2px; flex-wrap:wrap; }
+  .cal-day .dot{ width:6px; height:6px; border-radius:50%; background:var(--yellow); }
+  .cal-day.exam{ background:rgba(255,209,102,.22); border:2px solid var(--yellow); }
+  .bar-track{ background:rgba(0,0,0,.35); border-radius:999px; height:14px; overflow:hidden; }
+  .bar-fill{ background:var(--yellow); height:100%; border-radius:999px; }
+  .badge-chalk{
+    border:2px dashed var(--yellow); color:var(--yellow);
+    border-radius:999px; padding:.3rem 1rem; font-weight:700; letter-spacing:.04em;
+  }
+  .faq-item{ border-bottom:1px dashed rgba(245,241,230,.25); }
+  .tick{ color:var(--yellow); font-weight:700; }
+  @media print{
+    body{ background:#fff !important; color:#111 !important; }
+    body *{ visibility:hidden; }
+    #calCard, #calCard *{ visibility:visible; }
+    #calCard{
+      position:absolute; top:0; left:0; width:100%;
+      background:#fff !important; color:#111 !important;
+      border:2px solid #111 !important; box-shadow:none !important; border-radius:0;
+    }
+    #calCard .chalk-inner{ border-color:#111 !important; }
+    #calCard *{ color:#111 !important; border-color:#555 !important; }
+    #calCard .cal-day{ border:1px solid #999 !important; }
+    #calCard .cal-day .dot{ background:#111 !important; }
+    #calCard .cal-day.exam{ background:#eee !important; border:2px solid #111 !important; }
+    #calCard .print-hide{ display:none !important; }
+    #calCard .print-title{ color:#111 !important; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+<!-- ============ HEADER ============ -->
+<header class="sticky top-0 z-40 border-b-2 border-dashed" style="background:rgba(43,58,66,.96); border-color:rgba(245,241,230,.3)">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="chalk-font text-3xl font-bold inline-flex items-center justify-center w-11 h-11 rounded-lg" style="border:2.5px solid #FFD166; color:#FFD166; transform:rotate(-4deg)">R</span>
+      <span class="chalk-font text-3xl font-bold tracking-wide" style="color:#F5F1E6">Revisit</span>
+    </a>
+    <nav class="flex items-center gap-3 sm:gap-6 text-sm font-semibold">
+      <a href="#top" class="hover:opacity-80" style="color:#F5F1E6">Home</a>
+      <a href="https://fixoraa.tech" class="chalk-ghost !py-1.5 !px-3 text-sm">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ TOP AD (verbatim) ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6">
+  <section class="text-center pt-8 pb-6">
+    <span class="badge-chalk inline-block text-sm uppercase">Unlimited Free Usage &middot; No Signup</span>
+    <h1 class="chalk-font text-5xl sm:text-6xl font-bold mt-4 leading-tight" style="color:#F5F1E6">
+      Revisit <span style="color:#FFD166">&mdash;</span> the spaced repetition<br class="hidden sm:block"> study planner that fits <span class="underline decoration-wavy" style="text-decoration-color:#FFD166">your</span> week
+    </h1>
+    <p class="mt-4 max-w-2xl mx-auto text-base sm:text-lg" style="color:rgba(245,241,230,.8)">
+      Tell Revisit your exam date, your topics and the days you can actually study.
+      It builds an SM-2 spaced repetition timetable that squeezes every review into the slots you have &mdash; weekends-only learners welcome.
+    </p>
+    <svg class="mx-auto mt-2" width="220" height="40" viewBox="0 0 220 40" fill="none" aria-hidden="true">
+      <path d="M4 30 C 60 32, 90 8, 130 14 S 200 30, 216 12" stroke="#FFD166" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 7"/>
+    </svg>
+  </section>
+
+  <!-- ============ TOOL ============ -->
+  <section id="tool" class="chalk-board p-4 sm:p-8 mt-2">
+    <div class="chalk-inner p-4 sm:p-6">
+
+      <!-- STEP 1 : exam -->
+      <div class="mb-7">
+        <h2 class="chalk-font text-3xl font-bold mb-1" style="color:#FFD166">1 &middot; Your exam</h2>
+        <p class="text-sm mb-3" style="color:rgba(245,241,230,.65)">Everything counts backwards from this date.</p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label for="examName" class="block text-sm font-semibold mb-1.5">Exam name</label>
+            <input id="examName" class="chalk-input" type="text" maxlength="60" placeholder="e.g. Biology finals, UPSC prelims, SAT">
+          </div>
+          <div>
+            <label for="examDate" class="block text-sm font-semibold mb-1.5">Exam date</label>
+            <input id="examDate" class="chalk-input" type="date">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 : topics -->
+      <div class="mb-7">
+        <h2 class="chalk-font text-3xl font-bold mb-1" style="color:#FFD166">2 &middot; Your topics</h2>
+        <p class="text-sm mb-3" style="color:rgba(245,241,230,.65)">Add each chapter or subject. Rate how well you know it &mdash; shaky topics automatically get more reviews.</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input id="topicName" class="chalk-input flex-1" type="text" maxlength="60" placeholder="e.g. Photosynthesis, Quadratic equations">
+          <div class="flex items-center gap-1.5" role="radiogroup" aria-label="Confidence">
+            <span class="text-xs mr-1" style="color:rgba(245,241,230,.6)">confidence</span>
+            <button class="conf-dot" data-conf="1" title="1 - very shaky">1</button>
+            <button class="conf-dot" data-conf="2" title="2 - shaky">2</button>
+            <button class="conf-dot on" data-conf="3" title="3 - okay">3</button>
+            <button class="conf-dot" data-conf="4" title="4 - solid">4</button>
+            <button class="conf-dot" data-conf="5" title="5 - rock solid">5</button>
+          </div>
+          <button id="addTopic" class="chalk-ghost whitespace-nowrap">+ Add topic</button>
+        </div>
+        <div id="topicList" class="flex flex-wrap gap-2 mt-4"></div>
+      </div>
+
+      <!-- STEP 3 : availability -->
+      <div class="mb-7">
+        <h2 class="chalk-font text-3xl font-bold mb-1" style="color:#FFD166">3 &middot; When can you study?</h2>
+        <p class="text-sm mb-3" style="color:rgba(245,241,230,.65)">Mark only the days you are free. Revisit fits every review into these slots &mdash; nothing is ever scheduled on a day you marked busy.</p>
+        <div class="flex flex-wrap gap-2.5 mb-4" id="weekdayRow" role="group" aria-label="Free days of the week">
+          <button class="wd-toggle" data-wd="1">M</button>
+          <button class="wd-toggle" data-wd="2">T</button>
+          <button class="wd-toggle" data-wd="3">W</button>
+          <button class="wd-toggle" data-wd="4">T</button>
+          <button class="wd-toggle" data-wd="5">F</button>
+          <button class="wd-toggle" data-wd="6">S</button>
+          <button class="wd-toggle on" data-wd="0">S</button>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label for="hoursPerDay" class="block text-sm font-semibold mb-1.5">Study hours on a free day</label>
+            <input id="hoursPerDay" class="chalk-input" type="number" min="0.5" max="16" step="0.5" value="2">
+          </div>
+          <div>
+            <label for="sessionMinutes" class="block text-sm font-semibold mb-1.5">Minutes per review session</label>
+            <select id="sessionMinutes" class="chalk-input">
+              <option value="15">15 min &mdash; quick recall</option>
+              <option value="25" selected>25 min &mdash; one pomodoro</option>
+              <option value="45">45 min &mdash; deep review</option>
+              <option value="60">60 min &mdash; full session</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="formError" class="hidden mb-4 text-sm font-semibold rounded-lg px-4 py-3" style="background:rgba(255,120,120,.12); border:2px dashed rgba(255,150,150,.7); color:#ffb3b3"></div>
+
+      <div class="text-center">
+        <button id="generateBtn" class="chalk-btn text-lg">Chalk out my plan &#9998;</button>
+        <p class="text-xs mt-2" style="color:rgba(245,241,230,.5)">Your plan is saved in this browser only &mdash; nothing is uploaded anywhere.</p>
+      </div>
+
+      <!-- ============ RESULTS ============ -->
+      <div id="results" class="hidden mt-8">
+
+        <!-- countdown -->
+        <div class="chalk-inner p-5 text-center mb-6">
+          <p class="text-sm uppercase tracking-widest" style="color:rgba(245,241,230,.6)">Countdown</p>
+          <p class="chalk-font text-6xl font-bold" style="color:#FFD166"><span id="cdDays">0</span></p>
+          <p class="text-lg font-semibold"><span id="cdLabel">days</span> until <span id="cdExam">your exam</span></p>
+          <p class="text-sm" style="color:rgba(245,241,230,.6)"><span id="cdDate"></span> &middot; <span id="cdToday"></span></p>
+        </div>
+
+        <!-- stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="statGrid"></div>
+
+        <!-- confidence allocation -->
+        <div class="chalk-inner p-5 mb-6">
+          <h3 class="chalk-font text-2xl font-bold mb-1" style="color:#FFD166">Smart slot allocation</h3>
+          <p class="text-sm mb-4" style="color:rgba(245,241,230,.65)">Low-confidence topics automatically earn more review slots. This is how your sessions are shared out:</p>
+          <div id="allocBars" class="space-y-3"></div>
+        </div>
+
+        <!-- schedule -->
+        <div class="chalk-inner p-5 mb-6">
+          <h3 class="chalk-font text-2xl font-bold mb-1" style="color:#FFD166">Your revision timetable</h3>
+          <p class="text-sm mb-4" style="color:rgba(245,241,230,.65)"><span class="topic-chip sess-learn text-xs !py-0.5">learn</span> = first study &nbsp; <span class="topic-chip sess-review text-xs !py-0.5">review</span> = spaced recall</p>
+          <div id="scheduleList" class="space-y-3 max-h-[420px] overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- forgetting curve -->
+        <div class="chalk-inner p-5 mb-6">
+          <h3 class="chalk-font text-2xl font-bold mb-1" style="color:#FFD166">Your forgetting curve, drawn in chalk</h3>
+          <p class="text-sm mb-4" style="color:rgba(245,241,230,.65)">The dashed line is what happens without review &mdash; memory decays exponentially (Ebbinghaus). The solid chalk line is your Revisit plan: each review pulls retention back up and strengthens the memory trace.</p>
+          <div class="flex flex-col sm:flex-row gap-3 mb-3">
+            <div class="flex-1">
+              <label for="curveTopic" class="block text-sm font-semibold mb-1.5">Topic</label>
+              <select id="curveTopic" class="chalk-input"></select>
+            </div>
+            <div>
+              <label for="curveStrength" class="block text-sm font-semibold mb-1.5">Memory strength</label>
+              <select id="curveStrength" class="chalk-input">
+                <option value="3">Fragile &mdash; new material</option>
+                <option value="7" selected>Average &mdash; 7 day half-life</option>
+                <option value="14">Strong &mdash; familiar material</option>
+              </select>
+            </div>
+          </div>
+          <canvas id="curveCanvas" class="w-full rounded-lg" style="height:300px; background:rgba(0,0,0,.25); border:1.5px dashed rgba(245,241,230,.3)" aria-label="Forgetting curve chart"></canvas>
+          <div class="flex flex-wrap gap-5 mt-3 text-sm">
+            <span><span class="inline-block w-6 border-t-2 border-dashed align-middle" style="border-color:rgba(245,241,230,.8)"></span> without review</span>
+            <span style="color:#FFD166"><span class="inline-block w-6 border-t-4 align-middle" style="border-color:#FFD166"></span> with your Revisit plan</span>
+          </div>
+        </div>
+
+        <!-- printable calendar -->
+        <div id="calCard" class="chalk-inner p-5">
+          <div class="flex items-center justify-between mb-1 print-hide">
+            <h3 class="chalk-font text-2xl font-bold" style="color:#FFD166">Printable study calendar</h3>
+            <div class="flex gap-2">
+              <button id="calPrev" class="chalk-ghost !px-3 !py-1">&larr;</button>
+              <button id="calNext" class="chalk-ghost !px-3 !py-1">&rarr;</button>
+            </div>
+          </div>
+          <h3 class="chalk-font text-3xl font-bold mb-3 text-center print-title" id="calTitle" style="color:#F5F1E6"></h3>
+          <p class="text-sm mb-4 text-center" style="color:rgba(245,241,230,.6)">Yellow dots = review sessions &middot; highlighted day = exam day</p>
+          <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold mb-1" style="color:rgba(245,241,230,.6)">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
+          <div class="text-center mt-5 print-hide">
+            <button id="printBtn" class="chalk-btn">&#128438; Print calendar</button>
+          </div>
+          <p class="text-xs mt-3 text-center print-hide" style="color:rgba(245,241,230,.5)">Tip: stick it on your wall &mdash; tick each session off as you finish it.</p>
+        </div>
+
+      </div><!-- /results -->
+    </div>
+  </section>
+</main>
+
+<!-- ============ BOTTOM AD (verbatim) ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464498"></script>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEO ARTICLE ============ -->
+<article class="mx-auto max-w-3xl px-4 sm:px-6 mt-10 pb-4 text-[15px] leading-7" style="color:rgba(245,241,230,.88)">
+  <h2 class="chalk-font text-4xl font-bold mb-4" style="color:#FFD166">The complete guide to spaced repetition study planning</h2>
+
+  <p class="mb-4">Every student knows the sinking feeling of opening an exam paper and realising that the chapter they "finished" three weeks ago has quietly evaporated from memory. It is not a failure of intelligence or effort. It is a failure of scheduling. Human memory does not hold information just because we once understood it &mdash; it holds information we have been made to retrieve, repeatedly, at the right moments. A <strong>spaced repetition study planner</strong> is a tool that decides exactly when those moments should be, and Revisit is a free one that builds the whole timetable around the days you can actually study.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">Why you forget: the forgetting curve</h3>
+  <p class="mb-4">In the 1880s, the German psychologist Hermann Ebbinghaus ran painstaking experiments on his own memory and discovered a brutal law: newly learned information decays exponentially. Within twenty minutes you may have lost a third of it; within a day, most of it is gone. The curve he drew &mdash; steep at first, then flattening &mdash; is now called the <strong>forgetting curve</strong>, and every modern study method is an attempt to beat it.</p>
+  <p class="mb-4">The good news Ebbinghaus also found is that each time you successfully recall something, two things happen. First, retention jumps back up near one hundred percent. Second, the memory trace gets stronger, so the next decay is slower. After several well-timed recalls, the curve flattens so much that knowledge survives for months. Spaced repetition is simply the discipline of scheduling your reviews at the expanding intervals where each recall does the maximum work: not so soon that the review is wasted, not so late that you have forgotten everything and must relearn from scratch.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">The SM-2 algorithm, explained simply</h3>
+  <p class="mb-4">The most famous scheduling algorithm for spaced repetition is SM-2, developed by Piotr Wo&#378;niak for the SuperMemo software in the 1980s. Its logic is elegant. The first review happens one day after learning. The second happens six days later. After that, each interval is multiplied by an "easiness factor" &mdash; a number that starts at 2.5 and is nudged up or down based on how well you recalled the material.</p>
+  <p class="mb-4">Recall is graded on a scale from 0 to 5. A perfect, effortless recall (5) pushes the easiness factor up and stretches the next interval further into the future. A failed recall (below 3) resets the count: the item goes back to a one-day interval, because the memory trace was never properly formed. This feedback loop is what makes SM-2 adaptive. Easy material automatically gets fewer, wider-spaced reviews; difficult material automatically gets more, tighter ones. Revisit uses this exact SM-2 engine to lay out your exam revision timetable, so the plan adapts to how confidently you rate each topic.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">Why ordinary timetables fail busy students</h3>
+  <p class="mb-4">Search for a <strong>study schedule generator</strong> and most tools hand you the same rigid template: two hours every evening, seven days a week. That is fantasy for most real students. You might have coaching classes on weekdays, a part-time job, family commitments &mdash; or you might only be genuinely free on weekends. A plan that schedules reviews on days you cannot study is a plan you will abandon by Wednesday, and an abandoned plan teaches nothing.</p>
+  <p class="mb-4">Revisit was built around this reality. Its scheduler takes your actual availability as the hard constraint: you mark which days of the week are free and how many hours you can give on a free day, and every single review session is placed only on those slots. If a review is ideally due on a Thursday but you are only free on weekends, Revisit moves it to the nearest free day with spare capacity and keeps the SM-2 ordering intact. Students who study only on Saturdays and Sundays get a plan that is genuinely executable &mdash; which, as any teacher will tell you, beats a "perfect" plan that is never followed.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">Confidence-weighted revision: study where it hurts</h3>
+  <p class="mb-4">Not all topics deserve equal time. Spending forty minutes re-reading a chapter you already know cold, while the chapter that terrifies you gets the same forty minutes, is one of the most common ways students waste revision season. Revisit asks you to rate your confidence in each topic from 1 (very shaky) to 5 (rock solid) and then does two things with that rating.</p>
+  <p class="mb-4">First, the review intervals themselves adapt: low-confidence topics get a denser SM-2 sequence with extra reinforcement reviews in the first week, while high-confidence topics get a sparser sequence that simply keeps them warm. Second, the total pool of review sessions is divided by weight &mdash; a confidence-1 topic receives roughly five times the slots of a confidence-5 topic. The "smart slot allocation" panel on your plan shows this split openly, so you can see exactly where your hours are going and adjust your ratings if a topic surprises you.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">How to use Revisit, step by step</h3>
+  <p class="mb-4">Building your <strong>exam revision timetable maker</strong> plan takes about two minutes. <strong>Step one:</strong> enter your exam name and date. Everything is counted backwards from that date, so be honest &mdash; the algorithm needs the real deadline. <strong>Step two:</strong> add your topics one by one, giving each an honest confidence rating. It helps to think of confidence as "if the exam were tomorrow, how would I do on this topic?" <strong>Step three:</strong> mark your free days and daily study hours. Then press the button and watch your chalkboard fill up.</p>
+  <p class="mb-4">What you get is a day-by-day timetable from today to exam day. Each day lists which topics to learn for the first time and which to review, with session lengths matching the minutes you chose. The countdown banner keeps the deadline visible, and the study calendar turns the plan into something you can print and pin above your desk. Many students find that a physical calendar with sessions to tick off is the single best antidote to procrastination.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">What to actually do in a review session</h3>
+  <p class="mb-4">A schedule is only as good as the sessions in it, and spaced repetition has one golden rule: <strong>retrieve, don't re-read.</strong> Close the book and force yourself to recall the material &mdash; write out the derivation, explain the concept aloud as if teaching it, or answer practice questions from memory. Re-reading feels productive because it is fluent, but fluency is not memory; the slight struggle of retrieval is precisely what strengthens the trace.</p>
+  <p class="mb-4">Two more evidence-backed habits multiply the effect. <strong>Interleaving</strong> means mixing topics within a study day rather than drilling one chapter for hours; it feels harder, but exam performance improves because you practise telling concepts apart. <strong>Elaborative self-testing</strong> means asking "why" and "how" while you recall &mdash; connecting a new fact to something you already know builds extra retrieval paths. If a review session feels too easy, that is useful data: raise the topic's confidence rating next time and let Revisit stretch its intervals.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">A sample 30-day plan, decoded</h3>
+  <p class="mb-4">Suppose your physics final is thirty days away, you are free on all seven days for two hours, and you add four topics: kinematics (confidence 4), thermodynamics (confidence 2), optics (confidence 3) and modern physics (confidence 1). Revisit first places four learn sessions on your earliest free days, weakest topics first &mdash; modern physics and thermodynamics get learned before kinematics, because they need the longest runway of reviews.</p>
+  <p class="mb-4">Then the SM-2 sequences unfold. Modern physics, at confidence 1, gets reviews on roughly days 1, 3, 6, 10, 16 and 25 after learning &mdash; a dense ladder. Kinematics, at confidence 4, gets a light touch: a review around day 6 and another near day 20. By exam week, the plan naturally tapers into short, high-value recall sessions across everything, which is exactly what the research recommends: no frantic re-reading the night before, just a final pass over well-strengthened traces. Open the forgetting-curve chart for any topic and you can literally see its predicted retention curve &mdash; the sawtooth of your plan versus the flat decay of doing nothing.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">Common mistakes to avoid</h3>
+  <p class="mb-4">The first mistake is rating confidence aspirationally instead of honestly. If you mark everything a 4, Revisit will trust you and schedule sparse reviews &mdash; garbage in, garbage out. Rate for the student you are today, not the one you hope to be. The second mistake is skipping the early reviews because "I still remember it." That feeling is the peak of the sawtooth, right before the decay; the early reviews are the cheapest ones you will ever do and they buy the most long-term strength.</p>
+  <p class="mb-4">The third mistake is treating the plan as a prison. Life happens: a session gets missed. The healthy response is not guilt but a small repair &mdash; do the missed review the next free day, and if you blanked on the material, drop that topic's confidence by a point so future reviews tighten up. Spaced repetition is forgiving by design; one missed session costs far less than abandoning the system entirely.</p>
+
+  <h3 class="chalk-font text-3xl font-bold mt-8 mb-3" style="color:#F5F1E6">Who is Revisit for?</h3>
+  <p class="mb-4">Revisit works for any exam with a fixed date and a defined syllabus: school finals, board exams, university semesters, competitive exams like the SAT, GRE, UPSC or NEET, professional certifications, and even language proficiency tests. It is especially useful for students with uneven weeks &mdash; weekend-only studiers, working students, parents returning to education &mdash; because the availability scheduler is the core of the tool, not an afterthought. And because it runs entirely in your browser with unlimited free usage and no account, there is nothing to lose by trying it for your next exam: add your topics honestly, mark the days you truly have, and let the chalkboard do the scheduling.</p>
+</article>
+
+<!-- ============ FAQS ============ -->
+<section class="mx-auto max-w-3xl px-4 sm:px-6 mt-8 pb-10">
+  <h2 class="chalk-font text-4xl font-bold mb-4" style="color:#FFD166">Frequently asked questions</h2>
+  <div class="text-[15px] leading-7" style="color:rgba(245,241,230,.88)">
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">What is a spaced repetition study planner?</h3>
+      <p>A spaced repetition study planner schedules your review sessions at expanding intervals &mdash; for example 1 day, then 6 days, then 15 days after first learning &mdash; based on the science of the forgetting curve. Each review happens just as you are about to forget, which rebuilds the memory stronger than re-reading. Revisit automates this scheduling for all your exam topics at once.</p>
+    </div>
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">How does the SM-2 algorithm decide my review dates?</h3>
+      <p>SM-2, the algorithm behind Revisit, starts new topics with reviews after 1 day and 6 days, then multiplies each following interval by an easiness factor (starting at 2.5). Topics you rate with low confidence get a denser sequence with extra early reinforcement; topics you rate highly get wider spacing. If you fail to recall something, its interval resets to 1 day so the memory is rebuilt properly.</p>
+    </div>
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">How many days before my exam should I start?</h3>
+      <p>More is better, but Revisit works with whatever runway you have. With 30+ days, the SM-2 intervals can fully expand and you will see the classic tapering into light final reviews. With under two weeks, the scheduler compresses the early, high-value reviews (days 1, 3 and 6) into your available slots, which is still far more effective than cramming everything the night before.</p>
+    </div>
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">I can only study on weekends. Will this still work?</h3>
+      <p>Yes &mdash; that is exactly what the availability scheduler is for. Mark only Saturday and Sunday as free, and Revisit places every learn and review session on those days, keeping SM-2 ordering and never overloading a day beyond the hours you set. The intervals stretch to fit your real week instead of an imaginary one.</p>
+    </div>
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">What should I do during a review session?</h3>
+      <p>Retrieve, don't re-read. Close your notes and recall the material from memory &mdash; solve problems, write explanations, or answer flashcards. Mix topics within a session (interleaving) rather than drilling one chapter for an hour. If a review feels effortless, raise that topic's confidence rating so future intervals stretch further.</p>
+    </div>
+    <div class="faq-item py-4">
+      <h3 class="font-bold text-lg mb-1" style="color:#F5F1E6">Is Revisit really free? Do I need an account?</h3>
+      <p>Completely free, with unlimited usage and no account, signup or paywall. Your plan is generated and stored only in your own browser &mdash; nothing is uploaded to any server. You can build as many exam plans as you like.</p>
+    </div>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is a spaced repetition study planner?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A spaced repetition study planner schedules your review sessions at expanding intervals \u2014 for example 1 day, then 6 days, then 15 days after first learning \u2014 based on the science of the forgetting curve. Each review happens just as you are about to forget, which rebuilds the memory stronger than re-reading. Revisit automates this scheduling for all your exam topics at once." }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the SM-2 algorithm decide my review dates?",
+      "acceptedAnswer": { "@type": "Answer", "text": "SM-2, the algorithm behind Revisit, starts new topics with reviews after 1 day and 6 days, then multiplies each following interval by an easiness factor (starting at 2.5). Topics you rate with low confidence get a denser sequence with extra early reinforcement; topics you rate highly get wider spacing. If you fail to recall something, its interval resets to 1 day so the memory is rebuilt properly." }
+    },
+    {
+      "@type": "Question",
+      "name": "How many days before my exam should I start?",
+      "acceptedAnswer": { "@type": "Answer", "text": "More is better, but Revisit works with whatever runway you have. With 30+ days, the SM-2 intervals can fully expand and you will see the classic tapering into light final reviews. With under two weeks, the scheduler compresses the early, high-value reviews (days 1, 3 and 6) into your available slots, which is still far more effective than cramming everything the night before." }
+    },
+    {
+      "@type": "Question",
+      "name": "I can only study on weekends. Will this still work?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes \u2014 that is exactly what the availability scheduler is for. Mark only Saturday and Sunday as free, and Revisit places every learn and review session on those days, keeping SM-2 ordering and never overloading a day beyond the hours you set. The intervals stretch to fit your real week instead of an imaginary one." }
+    },
+    {
+      "@type": "Question",
+      "name": "What should I do during a review session?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Retrieve, don't re-read. Close your notes and recall the material from memory \u2014 solve problems, write explanations, or answer flashcards. Mix topics within a session (interleaving) rather than drilling one chapter for an hour. If a review feels effortless, raise that topic's confidence rating so future intervals stretch further." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Revisit really free? Do I need an account?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Completely free, with unlimited usage and no account, signup or paywall. Your plan is generated and stored only in your own browser \u2014 nothing is uploaded to any server. You can build as many exam plans as you like." }
+    }
+  ]
+}
+</script>
+
+<footer class="border-t-2 border-dashed mt-4" style="border-color:rgba(245,241,230,.25)">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm" style="color:rgba(245,241,230,.55)">
+    <span class="chalk-font text-2xl font-bold" style="color:#F5F1E6">Revisit</span>
+    <span>Free spaced repetition study planner &middot; your data never leaves your browser.</span>
+    <a href="https://fixoraa.tech" class="underline hover:opacity-80">More Tools</a>
+  </div>
+</footer>
+
+<!-- ============ CORE LOGIC (inlined at build time) ============ -->
+<script id="revisit-spaced-repetition-lib">
+// Revisit — Spaced Repetition Study Planner core logic.
+// PURE functions only. No DOM, no window, no document, no localStorage, no new Date().
+// All date math works on explicit 'YYYY-MM-DD' string arguments (UTC-based).
+
+function clampNum(value, min, max) {
+  var v = Number(value);
+  if (!isFinite(v)) { v = min; }
+  if (v < min) { return min; }
+  if (v > max) { return max; }
+  return v;
+}
+
+function parseISO(s) {
+  if (typeof s !== 'string') { return null; }
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) { return null; }
+  var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) { return null; }
+  var dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) { return null; }
+  return { y: y, m: mo, d: d };
+}
+
+function isoFromParts(y, m, d) {
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  return y + '-' + pad(m) + '-' + pad(d);
+}
+
+function addDaysISO(iso, n) {
+  var p = parseISO(iso);
+  if (!p) { return null; }
+  var dt = new Date(Date.UTC(p.y, p.m - 1, p.d + n));
+  return isoFromParts(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+}
+
+function daysBetween(aISO, bISO) {
+  var a = parseISO(aISO), b = parseISO(bISO);
+  if (!a || !b) { return NaN; }
+  var ms = Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d);
+  return Math.round(ms / 86400000);
+}
+
+// 0 = Sunday ... 6 = Saturday
+function weekdayOf(iso) {
+  var p = parseISO(iso);
+  if (!p) { return NaN; }
+  return new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
+}
+
+function daysUntil(todayISO, examISO) {
+  return daysBetween(todayISO, examISO);
+}
+
+// ---- SM-2-ish interval engine -------------------------------------------
+// nextInterval(prevReps, prevIntervalDays, easiness, quality) ->
+//   { reps, intervalDays, easiness }
+// quality: 0..5 (5 = perfect recall). Follows the classic SM-2 update rules.
+function nextInterval(prevReps, prevIntervalDays, easiness, quality) {
+  var q = clampNum(quality, 0, 5);
+  var e = isFinite(Number(easiness)) ? Number(easiness) : 2.5;
+  var reps = Math.max(0, Math.floor(Number(prevReps) || 0));
+  var prev = Math.max(1, Math.round(Number(prevIntervalDays) || 1));
+
+  if (q < 3) {
+    // Failed recall: restart the repetition count, next review tomorrow.
+    return { reps: 0, intervalDays: 1, easiness: Math.max(1.3, e - 0.2) };
+  }
+  reps += 1;
+  var interval;
+  if (reps === 1) { interval = 1; }
+  else if (reps === 2) { interval = 6; }
+  else { interval = Math.max(1, Math.round(prev * e)); }
+
+  var newE = e + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+  if (newE < 1.3) { newE = 1.3; }
+  newE = Math.round(newE * 100) / 100;
+  return { reps: reps, intervalDays: interval, easiness: newE };
+}
+
+// ---- Ideal review offsets ------------------------------------------------
+// reviewOffsets(confidence, maxDays) -> [0, ...] day offsets from the learn
+// day. Low confidence (1-2) => dense reinforcement; 3 => standard SM-2;
+// 4-5 => sparse (topic already strong).
+function reviewOffsets(confidence, maxDays) {
+  var c = clampNum(Math.round(Number(confidence) || 3), 1, 5);
+  var limit = Math.max(1, Math.floor(Number(maxDays) || 1));
+  var seed, step, growth, cap = 40;
+  if (c <= 2)      { seed = [0, 1, 3];    step = 6;  growth = 1.6; }
+  else if (c === 3){ seed = [0, 1, 6];    step = 8;  growth = 1.8; }
+  else             { seed = [0, 6];       step = 14; growth = 2.2; }
+
+  var offsets = [];
+  for (var i = 0; i < seed.length && offsets.length < cap; i++) {
+    if (seed[i] < limit) { offsets.push(seed[i]); }
+  }
+  var prev = offsets.length ? offsets[offsets.length - 1] : 0;
+  var curStep = step;
+  while (offsets.length < cap) {
+    var next = prev + Math.round(curStep);
+    if (next >= limit) { break; }
+    offsets.push(next);
+    prev = next;
+    curStep = curStep * growth;
+  }
+  return offsets;
+}
+
+// ---- Uneven-availability scheduler ---------------------------------------
+// scheduleReviews(topics, todayISO, examISO, availability)
+// topics: [{ name, confidence (1-5) }]
+// availability: { freeWeekdays: [0..6], hoursPerDay: number, sessionMinutes: number }
+// Returns { ok, error, sessions: [{date, topic, kind, dueOffset, sessionMinutes}], stats }
+function scheduleReviews(topics, todayISO, examISO, availability) {
+  var empty = { ok: false, error: '', sessions: [], stats: null };
+  var clean = [];
+  for (var i = 0; i < (topics || []).length; i++) {
+    var t = topics[i];
+    var name = String((t && t.name) || '').trim();
+    if (!name) { continue; }
+    clean.push({
+      name: name.slice(0, 60),
+      confidence: clampNum(Math.round(Number(t.confidence) || 3), 1, 5)
+    });
+  }
+  if (!clean.length) { empty.error = 'Add at least one topic to build a plan.'; return empty; }
+  if (!parseISO(todayISO) || !parseISO(examISO)) { empty.error = 'Pick a valid exam date.'; return empty; }
+  var totalDays = daysBetween(todayISO, examISO);
+  if (!(totalDays > 0)) { empty.error = 'Your exam date must be after today.'; return empty; }
+
+  var av = availability || {};
+  var freeDays = [];
+  for (var w = 0; w < ((av.freeWeekdays) || []).length; w++) {
+    var wd = Math.floor(Number(av.freeWeekdays[w]));
+    if (wd >= 0 && wd <= 6 && freeDays.indexOf(wd) === -1) { freeDays.push(wd); }
+  }
+  if (!freeDays.length) { empty.error = 'Mark at least one free day of the week.'; return empty; }
+  var hoursPerDay = clampNum(Number(av.hoursPerDay) || 1, 0.5, 16);
+  var sessionMinutes = clampNum(Math.round(Number(av.sessionMinutes) || 25), 5, 240);
+  var capacity = Math.max(1, Math.floor((hoursPerDay * 60) / sessionMinutes));
+
+  var booked = {}; // dateISO -> count
+  function isFree(dateISO) {
+    return freeDays.indexOf(weekdayOf(dateISO)) !== -1 && (booked[dateISO] || 0) < capacity;
+  }
+  function firstAvailableFrom(dateISO) {
+    var d = dateISO;
+    for (var k = 0; k < 400; k++) {
+      if (daysBetween(todayISO, d) >= totalDays) { return null; } // reached exam day
+      if (isFree(d)) { return d; }
+      d = addDaysISO(d, 1);
+    }
+    return null;
+  }
+
+  var sessions = [];
+  // Phase 1: learn sessions first (weakest topics first), on earliest free days.
+  var byConfidence = clean.slice().sort(function (a, b) { return a.confidence - b.confidence; });
+  for (var li = 0; li < byConfidence.length; li++) {
+    var ld = firstAvailableFrom(todayISO);
+    if (!ld) { break; }
+    booked[ld] = (booked[ld] || 0) + 1;
+    sessions.push({ date: ld, topic: byConfidence[li].name, kind: 'learn', dueOffset: 0, sessionMinutes: sessionMinutes });
+  }
+
+  // Phase 2: reviews, earliest-due first so crowded days cascade forward.
+  var reviewJobs = [];
+  for (var ti = 0; ti < clean.length; ti++) {
+    var offs = reviewOffsets(clean[ti].confidence, totalDays);
+    for (var oi = 1; oi < offs.length; oi++) {
+      reviewJobs.push({ topic: clean[ti].name, confidence: clean[ti].confidence, offset: offs[oi] });
+    }
+  }
+  reviewJobs.sort(function (a, b) {
+    if (a.offset !== b.offset) { return a.offset - b.offset; }
+    return a.confidence - b.confidence;
+  });
+  for (var ri = 0; ri < reviewJobs.length; ri++) {
+    var target = addDaysISO(todayISO, reviewJobs[ri].offset);
+    var rd = firstAvailableFrom(target);
+    if (!rd) { continue; } // no room before the exam — drop gracefully
+    booked[rd] = (booked[rd] || 0) + 1;
+    sessions.push({
+      date: rd,
+      topic: reviewJobs[ri].topic,
+      kind: 'review',
+      dueOffset: reviewJobs[ri].offset,
+      sessionMinutes: sessionMinutes
+    });
+  }
+
+  sessions.sort(function (a, b) {
+    if (a.date < b.date) { return -1; }
+    if (a.date > b.date) { return 1; }
+    if (a.kind !== b.kind) { return a.kind === 'learn' ? -1 : 1; }
+    return a.topic < b.topic ? -1 : 1;
+  });
+
+  var perTopic = {};
+  var daySet = {};
+  for (var si = 0; si < sessions.length; si++) {
+    perTopic[sessions[si].topic] = (perTopic[sessions[si].topic] || 0) + 1;
+    daySet[sessions[si].date] = true;
+  }
+  var studyDays = 0;
+  for (var key in daySet) { if (Object.prototype.hasOwnProperty.call(daySet, key)) { studyDays++; } }
+
+  return {
+    ok: true,
+    error: '',
+    sessions: sessions,
+    stats: {
+      topics: clean.length,
+      totalSessions: sessions.length,
+      studyDays: studyDays,
+      capacityPerDay: capacity,
+      daysToExam: totalDays,
+      perTopic: perTopic
+    }
+  };
+}
+
+// ---- Confidence-weighted allocation --------------------------------------
+// allocateByConfidence(topics, totalSlots) -> [{ name, slots }]
+// Weight = 6 - confidence, so low-confidence topics get proportionally more.
+function allocateByConfidence(topics, totalSlots) {
+  var result = [];
+  if (!topics || !topics.length || !(totalSlots > 0)) {
+    for (var i = 0; i < (topics || []).length; i++) {
+      result.push({ name: String(topics[i].name || '').slice(0, 60), slots: 0 });
+    }
+    return result;
+  }
+  var n = topics.length;
+  var total = Math.floor(Number(totalSlots));
+  var weights = [];
+  var wSum = 0;
+  for (var j = 0; j < n; j++) {
+    var c = clampNum(Math.round(Number(topics[j].confidence) || 3), 1, 5);
+    var w = 6 - c;
+    weights.push(w);
+    wSum += w;
+  }
+  if (wSum <= 0) { wSum = 1; }
+  var base = [], fractions = [], assigned = 0;
+  for (var k = 0; k < n; k++) {
+    var exact = (total * weights[k]) / wSum;
+    var b = Math.floor(exact);
+    base.push(b);
+    fractions.push({ idx: k, frac: exact - b });
+    assigned += b;
+  }
+  fractions.sort(function (a, b) { return b.frac - a.frac; });
+  var rest = total - assigned;
+  for (var r = 0; r < rest && r < fractions.length; r++) {
+    base[fractions[r].idx] += 1;
+  }
+  for (var t = 0; t < n; t++) {
+    result.push({ name: String(topics[t].name || '').slice(0, 60), slots: base[t] });
+  }
+  return result;
+}
+
+// ---- Forgetting curve ----------------------------------------------------
+// retentionCurve(daysSinceReview, strengthDays): Ebbinghaus R = e^(-t/S).
+function retentionCurve(daysSinceReview, strengthDays) {
+  var t = Number(daysSinceReview);
+  var s = Number(strengthDays);
+  if (!(t > 0)) { return 1; }
+  if (!(s > 0)) { s = 7; }
+  var r = Math.exp(-t / s);
+  if (r < 0) { return 0; }
+  if (r > 1) { return 1; }
+  return r;
+}
+
+// retentionWithReviews(reviewOffsetsArr, totalDays, strengthDays) ->
+//   [{ day, retention }] — each review resets retention to 1 and strengthens
+//   memory (strength x 1.7 per review), producing the classic sawtooth.
+function retentionWithReviews(reviewOffsetsArr, totalDays, strengthDays) {
+  var days = Math.max(1, Math.floor(Number(totalDays) || 1));
+  var s0 = Number(strengthDays);
+  if (!(s0 > 0)) { s0 = 7; }
+  var marks = {};
+  for (var i = 0; i < (reviewOffsetsArr || []).length; i++) {
+    var o = Math.floor(Number(reviewOffsetsArr[i]));
+    if (o >= 0 && o <= days) { marks[o] = true; }
+  }
+  var out = [];
+  var lastReview = 0;
+  var strength = s0;
+  var reviewedSoFar = 0;
+  for (var d = 0; d <= days; d++) {
+    if (marks[d] && d > 0) {
+      lastReview = d;
+      reviewedSoFar += 1;
+      strength = s0 * Math.pow(1.7, reviewedSoFar);
+    } else if (d === 0 && marks[0]) {
+      lastReview = 0;
+    }
+    var r = retentionCurve(d - lastReview, strength);
+    if (d === 0) { r = 1; }
+    out.push({ day: d, retention: Math.round(r * 1000) / 1000 });
+  }
+  return out;
+}
+
+// ---- Calendar helpers ----------------------------------------------------
+// monthCalendar(year, month) -> [[{iso, inMonth, weekday}... x7]...], weeks start Monday.
+function monthCalendar(year, month) {
+  var y = Math.floor(Number(year)), m = Math.floor(Number(month));
+  if (!(y >= 1970 && y <= 2100) || !(m >= 1 && m <= 12)) { return []; }
+  var first = new Date(Date.UTC(y, m - 1, 1));
+  var startShift = (first.getUTCDay() + 6) % 7; // Monday-start offset
+  var gridStart = addDaysISO(isoFromParts(y, m, 1), -startShift);
+  var daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  var weeks = [];
+  var cursor = gridStart;
+  for (var wk = 0; wk < 6; wk++) {
+    var week = [];
+    var sawMonthEnd = false;
+    for (var d = 0; d < 7; d++) {
+      var p = parseISO(cursor);
+      week.push({ iso: cursor, inMonth: (p.m === m), weekday: weekdayOf(cursor) });
+      if (p.m === m && p.d === daysInMonth) { sawMonthEnd = true; }
+      cursor = addDaysISO(cursor, 1);
+    }
+    weeks.push(week);
+    if (sawMonthEnd) { break; }
+  }
+  return weeks;
+}
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var LS_KEY = 'revisit-plan-v1';
+
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var WDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function todayISO() {
+    var d = new Date();
+    return isoFromParts(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+  function fmtLong(iso) {
+    var p = parseISO(iso);
+    if (!p) { return iso; }
+    var wd = WDAYS[new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay()];
+    return wd + ', ' + MONTHS[p.m - 1] + ' ' + p.d;
+  }
+  function fmtExam(iso) {
+    var p = parseISO(iso);
+    if (!p) { return iso; }
+    return MONTHS[p.m - 1] + ' ' + p.d + ', ' + p.y;
+  }
+
+  var state = {
+    topics: [],
+    selConf: 3,
+    freeWeekdays: [0],
+    plan: null,
+    today: todayISO(),
+    examName: '',
+    examISO: '',
+    calYear: 0,
+    calMonth: 0
+  };
+
+  /* ---------- persistence ---------- */
+  function save() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        examName: $('examName').value,
+        examDate: $('examDate').value,
+        topics: state.topics,
+        freeWeekdays: state.freeWeekdays,
+        hoursPerDay: $('hoursPerDay').value,
+        sessionMinutes: $('sessionMinutes').value
+      }));
+    } catch (e) { /* private mode: ignore */ }
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) { return; }
+      var s = JSON.parse(raw);
+      if (s.examName) { $('examName').value = s.examName; }
+      if (s.examDate) { $('examDate').value = s.examDate; }
+      if (Array.isArray(s.topics)) { state.topics = s.topics.filter(function (t) { return t && String(t.name).trim(); }); }
+      if (Array.isArray(s.freeWeekdays) && s.freeWeekdays.length) { state.freeWeekdays = s.freeWeekdays; }
+      if (s.hoursPerDay) { $('hoursPerDay').value = s.hoursPerDay; }
+      if (s.sessionMinutes) { $('sessionMinutes').value = s.sessionMinutes; }
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- inputs ---------- */
+  function confLabel(c) {
+    return { 1: 'very shaky', 2: 'shaky', 3: 'okay', 4: 'solid', 5: 'rock solid' }[c] || 'okay';
+  }
+  function renderTopics() {
+    var box = $('topicList');
+    if (!state.topics.length) {
+      box.innerHTML = '<p class="text-sm" style="color:rgba(245,241,230,.5)">No topics yet &mdash; add your first one above.</p>';
+      return;
+    }
+    box.innerHTML = state.topics.map(function (t, i) {
+      return '<span class="topic-chip"><strong>' + esc(t.name) + '</strong>' +
+        '<span class="text-xs" style="color:#FFD166">conf ' + t.confidence + ' &middot; ' + confLabel(t.confidence) + '</span>' +
+        '<button data-rm="' + i + '" aria-label="Remove ' + esc(t.name) + '">&times;</button></span>';
+    }).join('');
+    var btns = box.querySelectorAll('[data-rm]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () {
+        state.topics.splice(parseInt(this.getAttribute('data-rm'), 10), 1);
+        renderTopics(); save();
+      });
+    }
+  }
+  function syncWeekdayToggles() {
+    var btns = document.querySelectorAll('#weekdayRow .wd-toggle');
+    for (var i = 0; i < btns.length; i++) {
+      var wd = parseInt(btns[i].getAttribute('data-wd'), 10);
+      btns[i].classList.toggle('on', state.freeWeekdays.indexOf(wd) !== -1);
+    }
+  }
+
+  /* ---------- plan generation ---------- */
+  function showError(msg) {
+    var box = $('formError');
+    if (!msg) { box.classList.add('hidden'); box.textContent = ''; return; }
+    box.textContent = msg;
+    box.classList.remove('hidden');
+  }
+
+  function generate(fromRestore) {
+    showError('');
+    state.today = todayISO();
+    var examISO = $('examDate').value;
+    var examName = $('examName').value.trim();
+    var hours = parseFloat($('hoursPerDay').value);
+    var sessMin = parseInt($('sessionMinutes').value, 10);
+
+    if (!examISO) { return showError('Pick your exam date first \u2014 the whole plan counts backwards from it.'); }
+    if (!state.topics.length) { return showError('Add at least one topic so there is something to schedule.'); }
+    if (!state.freeWeekdays.length) { return showError('Mark at least one free day of the week (tap the day circles above).'); }
+    if (!(hours >= 0.5)) { return showError('Study hours per free day must be at least 0.5.'); }
+
+    var res = scheduleReviews(state.topics, state.today, examISO, {
+      freeWeekdays: state.freeWeekdays,
+      hoursPerDay: hours,
+      sessionMinutes: sessMin
+    });
+    if (!res.ok) { $('results').classList.add('hidden'); return showError(res.error); }
+
+    state.plan = res;
+    state.examName = examName || 'your exam';
+    state.examISO = examISO;
+    var ep = parseISO(examISO);
+    state.calYear = ep.y; state.calMonth = ep.m;
+    $('results').classList.remove('hidden');
+
+    renderCountdown();
+    renderStats();
+    renderAlloc();
+    renderSchedule();
+    populateCurveTopics();
+    renderCurve();
+    renderCalendar();
+    save();
+    if (!fromRestore) {
+      $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  /* ---------- countdown ---------- */
+  function renderCountdown() {
+    var days = daysUntil(state.today, state.examISO);
+    $('cdDays').textContent = days;
+    $('cdLabel').textContent = days === 1 ? 'day' : 'days';
+    $('cdExam').textContent = state.examName;
+    $('cdDate').textContent = fmtExam(state.examISO);
+    $('cdToday').textContent = 'today is ' + fmtExam(state.today);
+  }
+
+  /* ---------- stats ---------- */
+  function renderStats() {
+    var st = state.plan.stats;
+    var avg = st.studyDays ? (st.totalSessions / st.studyDays) : 0;
+    var cards = [
+      ['Total sessions', st.totalSessions],
+      ['Study days', st.studyDays],
+      ['Days to exam', st.daysToExam],
+      ['Avg / day', (Math.round(avg * 10) / 10)]
+    ];
+    $('statGrid').innerHTML = cards.map(function (c) {
+      return '<div class="chalk-inner p-4 text-center">' +
+        '<p class="chalk-font text-4xl font-bold" style="color:#FFD166">' + c[1] + '</p>' +
+        '<p class="text-xs uppercase tracking-widest mt-1" style="color:rgba(245,241,230,.6)">' + c[0] + '</p></div>';
+    }).join('');
+  }
+
+  /* ---------- confidence allocation ---------- */
+  function renderAlloc() {
+    var alloc = allocateByConfidence(state.topics, state.plan.stats.totalSessions);
+    var max = 1;
+    alloc.forEach(function (a) { if (a.slots > max) { max = a.slots; } });
+    $('allocBars').innerHTML = alloc.map(function (a) {
+      var pct = Math.round((a.slots / max) * 100);
+      var conf = 3;
+      for (var i = 0; i < state.topics.length; i++) {
+        if (state.topics[i].name === a.name) { conf = state.topics[i].confidence; }
+      }
+      return '<div>' +
+        '<div class="flex justify-between text-sm mb-1"><span class="font-semibold">' + esc(a.name) +
+        '</span><span style="color:#FFD166">' + a.slots + ' slots &middot; conf ' + conf + '</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div></div>';
+    }).join('');
+  }
+
+  /* ---------- schedule list ---------- */
+  function renderSchedule() {
+    var byDate = {};
+    var order = [];
+    state.plan.sessions.forEach(function (s) {
+      if (!byDate[s.date]) { byDate[s.date] = []; order.push(s.date); }
+      byDate[s.date].push(s);
+    });
+    order.sort();
+    $('scheduleList').innerHTML = order.map(function (d) {
+      var rows = byDate[d].map(function (s) {
+        var cls = s.kind === 'learn' ? 'sess-learn' : 'sess-review';
+        var tag = s.kind === 'learn' ? 'learn' : 'review';
+        return '<span class="topic-chip ' + cls + ' text-xs">' + esc(s.topic) +
+          ' <span class="opacity-80">' + tag + ' &middot; ' + s.sessionMinutes + ' min</span></span>';
+      }).join(' ');
+      return '<div class="rounded-lg p-3" style="background:rgba(0,0,0,.22); border:1.5px dashed rgba(245,241,230,.3)">' +
+        '<p class="font-bold mb-2" style="color:#F5F1E6">' + fmtLong(d) + '</p>' +
+        '<div class="flex flex-wrap gap-2">' + rows + '</div></div>';
+    }).join('');
+  }
+
+  /* ---------- forgetting curve ---------- */
+  function populateCurveTopics() {
+    var sel = $('curveTopic');
+    var prev = sel.value;
+    sel.innerHTML = state.topics.map(function (t) {
+      return '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>';
+    }).join('');
+    if (prev) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === prev) { sel.selectedIndex = i; }
+      }
+    }
+  }
+  function renderCurve() {
+    var canvas = $('curveCanvas');
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = 300;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    var selName = $('curveTopic').value;
+    var topic = null;
+    for (var i = 0; i < state.topics.length; i++) {
+      if (state.topics[i].name === selName) { topic = state.topics[i]; }
+    }
+    if (!topic) { return; }
+    var strength = parseInt($('curveStrength').value, 10) || 7;
+    var totalDays = Math.max(7, daysUntil(state.today, state.examISO));
+    var offsets = reviewOffsets(topic.confidence, totalDays);
+
+    var noReview = [];
+    for (var d = 0; d <= totalDays; d++) { noReview.push(retentionCurve(d, strength)); }
+    var withPlan = retentionWithReviews(offsets, totalDays, strength);
+
+    var padL = 46, padR = 14, padT = 16, padB = 36;
+    var iw = w - padL - padR, ih = h - padT - padB;
+    function X(day) { return padL + (day / totalDays) * iw; }
+    function Y(r) { return padT + (1 - r) * ih; }
+
+    // gridlines
+    ctx.strokeStyle = 'rgba(245,241,230,.18)';
+    ctx.setLineDash([4, 5]);
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(245,241,230,.6)';
+    ctx.font = '11px Inter, sans-serif';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (r) {
+      ctx.beginPath(); ctx.moveTo(padL, Y(r)); ctx.lineTo(w - padR, Y(r)); ctx.stroke();
+      ctx.fillText(Math.round(r * 100) + '%', 6, Y(r) + 4);
+    });
+    var stepX = Math.max(1, Math.ceil(totalDays / 8));
+    for (var xd = 0; xd <= totalDays; xd += stepX) {
+      ctx.fillText('d' + xd, X(xd) - 8, h - 14);
+    }
+    ctx.setLineDash([]);
+
+    // without review (dashed chalk)
+    ctx.strokeStyle = 'rgba(245,241,230,.75)';
+    ctx.setLineDash([7, 6]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var n = 0; n <= totalDays; n++) {
+      var px = X(n), py = Y(noReview[n]);
+      if (n === 0) { ctx.moveTo(px, py); } else { ctx.lineTo(px, py); }
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // with plan (solid chalk yellow sawtooth)
+    ctx.strokeStyle = '#FFD166';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255,209,102,.45)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    for (var m = 0; m < withPlan.length; m++) {
+      var qx = X(withPlan[m].day), qy = Y(withPlan[m].retention);
+      if (m === 0) { ctx.moveTo(qx, qy); } else { ctx.lineTo(qx, qy); }
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // review markers
+    ctx.fillStyle = '#FFD166';
+    offsets.forEach(function (o) {
+      if (o > totalDays) { return; }
+      var pt = null;
+      for (var k = 0; k < withPlan.length; k++) { if (withPlan[k].day === o) { pt = withPlan[k]; } }
+      if (!pt) { return; }
+      ctx.beginPath(); ctx.arc(X(o), Y(pt.retention), 4.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.fillStyle = 'rgba(245,241,230,.55)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('retention over ' + totalDays + ' days', padL, h - 2);
+  }
+
+  /* ---------- printable calendar ---------- */
+  function sessionCountByDate() {
+    var map = {};
+    state.plan.sessions.forEach(function (s) {
+      map[s.date] = (map[s.date] || 0) + 1;
+    });
+    return map;
+  }
+  function renderCalendar() {
+    var y = state.calYear, m = state.calMonth;
+    $('calTitle').textContent = MONTHS_LONG[m - 1] + ' ' + y;
+    var weeks = monthCalendar(y, m);
+    var counts = sessionCountByDate();
+    var html = '';
+    weeks.forEach(function (week) {
+      week.forEach(function (cell) {
+        var p = parseISO(cell.iso);
+        var dim = cell.inMonth ? '' : 'opacity-40';
+        var examCls = cell.iso === state.examISO ? ' exam' : '';
+        var dots = '';
+        var n = counts[cell.iso] || 0;
+        if (n > 0) {
+          dots = '<div class="dots">';
+          for (var i = 0; i < Math.min(n, 6); i++) { dots += '<span class="dot"></span>'; }
+          if (n > 6) { dots += '<span style="font-size:9px;color:#FFD166">+' + (n - 6) + '</span>'; }
+          dots += '</div>';
+        }
+        html += '<div class="cal-day ' + dim + examCls + '"><span>' + p.d + '</span>' + dots + '</div>';
+      });
+    });
+    $('calGrid').innerHTML = html;
+  }
+
+  /* ---------- events ---------- */
+  document.querySelectorAll('#weekdayRow .wd-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var wd = parseInt(btn.getAttribute('data-wd'), 10);
+      var i = state.freeWeekdays.indexOf(wd);
+      if (i === -1) { state.freeWeekdays.push(wd); }
+      else { state.freeWeekdays.splice(i, 1); }
+      syncWeekdayToggles(); save();
+    });
+  });
+  document.querySelectorAll('.conf-dot').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.conf-dot').forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      state.selConf = parseInt(btn.getAttribute('data-conf'), 10);
+    });
+  });
+  $('addTopic').addEventListener('click', function () {
+    var name = $('topicName').value.trim();
+    if (!name) { return showError('Type a topic name first \u2014 e.g. "Photosynthesis".'); }
+    var dupe = state.topics.some(function (t) { return t.name.toLowerCase() === name.toLowerCase(); });
+    if (dupe) { return showError('"' + name + '" is already on your list.'); }
+    showError('');
+    state.topics.push({ name: name.slice(0, 60), confidence: state.selConf });
+    $('topicName').value = '';
+    renderTopics(); save();
+    $('topicName').focus();
+  });
+  $('topicName').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('addTopic').click(); }
+  });
+  $('generateBtn').addEventListener('click', function () { generate(false); });
+  $('curveTopic').addEventListener('change', renderCurve);
+  $('curveStrength').addEventListener('change', renderCurve);
+  window.addEventListener('resize', function () {
+    if (state.plan) { renderCurve(); }
+  });
+  $('calPrev').addEventListener('click', function () {
+    state.calMonth -= 1;
+    if (state.calMonth < 1) { state.calMonth = 12; state.calYear -= 1; }
+    renderCalendar();
+  });
+  $('calNext').addEventListener('click', function () {
+    state.calMonth += 1;
+    if (state.calMonth > 12) { state.calMonth = 1; state.calYear += 1; }
+    renderCalendar();
+  });
+  $('printBtn').addEventListener('click', function () { window.print(); });
+
+  /* ---------- init ---------- */
+  $('examDate').min = state.today;
+  load();
+  syncWeekdayToggles();
+  renderTopics();
+  if ($('examDate').value && state.topics.length) {
+    generate(true);
+  }
+})();
+</script>
+</body>
+</html>
